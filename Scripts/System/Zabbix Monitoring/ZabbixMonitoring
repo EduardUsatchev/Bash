@@ -1,0 +1,35 @@
+#!/bin/bash
+
+file_ips="/root/Eduard/CloudCustomerIp.csv"
+file=/home/it_tikal/cloud_zabbix_open$(date +"%d-%m-%y").csv
+touch $file
+
+for host in $(cat $file_ips|cut -d',' -f1)
+do
+        port1=$(grep -w $host $file_ips |cut -d',' -f2)
+        port2=$(grep -w $host $file_ips |cut -d',' -f3)
+        port3=$(grep -w $host $file_ips |cut -d',' -f4)
+        port4=$(grep -w $host $file_ips |cut -d',' -f5)
+        name=$(grep -w $host $file_ips |cut -d',' -f6)
+        i=1
+        while [ $i -lt 5 ]
+        do
+                var=port$i
+                #echo \'"${!var}"\'
+                if [ "${!var}" != '' ]
+                then
+                        nc -z -w2 $host ${!var}
+                        if [ $? == 0 ]
+                        then
+                                echo -e "$name,$host,${!var},open" |tee -a $file
+                        else
+                                echo -e "$name,$host,${!var},closed" |tee -a $file
+                        fi
+                fi
+                i=$[$i+1]
+        done
+
+done
+
+echo "Zabbix check perfomred on $(date +"%d-%m-%y"). Please check the output file" | mailx -s "Zabbix check $(date +"%d-%m-%y")" -a "/home/it_tikal/cloud_zabbix_open$(date +"%d-%m-%y").csv"  eduardu@tikalcenter.com
+
